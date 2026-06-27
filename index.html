@@ -207,13 +207,13 @@
 
 <script>
     const LISTAS_INTERNAS = [
+        { nombre: "🏰 Disney", archivo: "Coleccion Disney.m3u" },
         { nombre: "🎨 Pixar", archivo: "Coleccion Pixar.m3u" },
         { nombre: "🌙 DreamWorks", archivo: "Coleccion DreamWorks Animation.m3u" },
         { nombre: "🦇 Universo DC", archivo: "Universo DC.m3u" },
         { nombre: "🦸 Universo Marvel", archivo: "Universo Marvel.m3u" },
         { nombre: "🚓 Sagas Policíacas", archivo: "Sagas Policiacas.m3u" },
         { nombre: "💥 Sagas Acción", archivo: "Sagas Accion.m3u" },
-        { nombre: "🏰 Disney", archivo: "Coleccion Disney.m3u" },
         { nombre: "🎵 Musicales", archivo: "Nos va la marcha(Musicales).m3u" },
         { nombre: "🕵️‍♂️ Sagas Suspense", archivo: "Sagas Suspense.m3u" },
         { nombre: "🥋 Artes Marciales", archivo: "Sagas_Artes_Marciales_por_actor.m3u" },
@@ -232,15 +232,12 @@
 
     let peliculasLista = [];
 
-    // Función Inteligente para Enviar a TV desde fuera
     function enviarATV() {
         if (video.remote && typeof video.remote.prompt === 'function') {
-            // Abre el menú nativo de Chromecast/Transmisión en Chrome, Edge y navegadores modernos
             video.remote.prompt().catch(() => {
                 alert('Para transmitir, asegúrate de que tu Smart TV o Chromecast está encendido y en la misma red Wi-Fi.');
             });
         } else if (video.webkitShowPlaybackTargetPicker) {
-            // Soporte para AirPlay (Dispositivos Apple)
             video.webkitShowPlaybackTargetPicker();
         } else {
             alert('Tu navegador no permite abrir el menú de transmisión directamente. Usa la opción nativa de tu navegador (Menú -> Transmitir / Cast).');
@@ -265,8 +262,11 @@
         }
     }
 
+    // Inicializa las categorías y auto-selecciona Disney
     function inicializarCategorias() {
         categoriesGrid.innerHTML = "";
+        let botonDisney = null;
+
         LISTAS_INTERNAS.forEach((lista) => {
             const btn = document.createElement('button');
             btn.className = 'btn-category';
@@ -277,7 +277,16 @@
                 cargarListaDesdeCarpeta(lista.archivo);
             };
             categoriesGrid.appendChild(btn);
+
+            if (lista.nombre.includes("Disney")) {
+                botonDisney = btn;
+            }
         });
+
+        // Simula la pulsación automática en Disney al cargar la web
+        if (botonDisney) {
+            botonDisney.click();
+        }
     }
 
     async function cargarListaDesdeCarpeta(nombreArchivo) {
@@ -296,7 +305,7 @@
             gridUI.innerHTML = `
                 <div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--accent);">
                     ❌ Error al cargar el archivo m3u.<br>
-                    Asegúrate de haber creado la carpeta llamada <strong>listas</strong> al lado de este archivo HTML y que contenga el archivo: <strong>${nombreArchivo}</strong>.
+                    Asegúrate de haber creado la carpeta llamada <strong>listas</strong> (en minúsculas) al lado de este archivo HTML y que contenga el archivo: <strong>${nombreArchivo}</strong>.
                 </div>`;
         }
     }
@@ -344,28 +353,45 @@
                 <div class="poster-wrapper loading-shimmer"></div>
                 <div class="card-info">
                     <h4 class="card-title">${item.titulo}</h4>
-                    <span class="card-year">Limpiando...</span>
+                    <span class="card-year">Buscando...</span>
                 </div>
             `;
             gridUI.appendChild(card);
         });
     }
 
+    // ALGORITMO DE LIMPIEZA PROFUNDA OPTIMIZADO PARA TMDB
     function purificarNombreArchivo(nombreOriginal) {
         let texto = nombreOriginal;
+        
+        // 1. Eliminar extensiones comunes de video
         texto = texto.replace(/\.(mp4|mkv|avi|mov|flv|wmv|mpg|mpeg)$/i, "");
+        
+        // 2. Cambiar puntos, guiones bajos y guiones por espacios limpios
         texto = texto.replace(/[\._\-]/g, " ");
 
+        // 3. Detectar año de lanzamiento (1900-2030)
         let anioDetectado = null;
         const matchAnio = texto.match(/\b(19\d\d|20[0-2]\d|2030)\b/);
         if (matchAnio) {
             anioDetectado = matchAnio[0];
-            texto = texto.replace(anioDetectado, "");
+            // MEJORA CLAVE: Nos quedamos estrictamente con el texto ANTES del año.
+            // Todo lo que viene después (calidades, idiomas, ripeos) se descarta por completo.
+            const partes = texto.split(anioDetectado);
+            texto = partes[0];
         }
 
-        const basuraRegex = /\b(1080p|720p|4k|2160p|hd|3d|bluray|brrip|dvdrip|hdrip|webrip|web\s?dl|rip|dual|audio|latino|castellano|espanol|sub|subs|multi|x264|h264|x265|h265|hevc|ac3|dts|xvid|divx|aac)\b/gi;
+        // 4. Diccionario masivo de términos basura por si quedan rastros en el título
+        const basuraRegex = /\b(1080p|720p|4k|2160p|hd|3d|bluray|brrip|dvdrip|hdrip|webrip|web\s?dl|web-dl|rip|dual|audio|latino|castellano|espanol|spanish|sub|subs|subtitulado|multi|x264|h264|x265|h265|hevc|ac3|dts|xvid|divx|aac|mp3|microhd|screener|ts|hq|unrated|extended|remux|bdremux)\b/gi;
         texto = texto.replace(basuraRegex, "");
+        
+        // 5. Quitar símbolos de agrupación sobrantes
         texto = texto.replace(/[\[\]\(\)]/g, " ");
+        
+        // 6. Eliminar numeraciones automáticas de listas (Ej: "01 ", "2.- ")
+        texto = texto.replace(/^\s*\d+[\.\s\-\)]+/, "");
+
+        // 7. Colapsar espacios duplicados
         texto = texto.replace(/\s+/g, " ").trim();
 
         return { queryLimpia: texto, anio: anioDetectado };
@@ -378,7 +404,10 @@
             const { queryLimpia, anio } = purificarNombreArchivo(p.titulo);
 
             try {
-                let urlBusqueda = `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${encodeURIComponent(queryLimpia)}&language=es-ES`;
+                // Si la limpieza vacía la cadena por error, usamos el título original sin extensión
+                let queryFinal = queryLimpia || p.titulo.replace(/\.(mp4|mkv|avi|mov)$/i, "");
+                
+                let urlBusqueda = `https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${encodeURIComponent(queryFinal)}&language=es-ES`;
                 if (anio) urlBusqueda += `&year=${anio}`;
 
                 const searchRes = await fetch(urlBusqueda);
@@ -403,8 +432,9 @@
                         actores: reparto
                     };
                 } else {
+                    // Si falló buscando con año, reintentamos una búsqueda abierta solo por texto
                     if (anio) {
-                        const retryRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${encodeURIComponent(queryLimpia)}&language=es-ES`);
+                        const retryRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${encodeURIComponent(queryFinal)}&language=es-ES`);
                         const retryData = await retryRes.json();
                         if (retryData.results && retryData.results.length > 0) {
                             const infoOficial = retryData.results[0];
@@ -468,6 +498,7 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // Iniciar la carga al desplegar la web
     inicializarCategorias();
 </script>
 </body>
