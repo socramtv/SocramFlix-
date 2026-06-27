@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamPlex Pro - GitHub Cloud Edition</title>
+    <title>StreamPlex Pro - Local & Cloud Server</title>
     <style>
         :root {
             --bg-main: #0b0f19;
@@ -50,7 +50,7 @@
         .btn-file { background: #1e293b; border: 1px solid #475569; }
         .btn-file:hover { background: #334155; }
 
-        /* Panel de Categorías de GitHub */
+        /* Panel de Categorías */
         .categories-section {
             padding: 0 20px 20px 20px;
             border-bottom: 1px solid #1e293b;
@@ -145,7 +145,7 @@
     </div>
 
     <div class="categories-section">
-        <div class="categories-title">Colecciones en la Nube (Carpeta /listas)</div>
+        <div class="categories-title">Colecciones Disponibles</div>
         <div class="categories-grid" id="categoriesGrid"></div>
     </div>
 
@@ -163,8 +163,8 @@
             
             <div class="movie-details" id="currentMovieDetails">
                 <h1 class="movie-title" id="mTitle">Bienvenido</h1>
-                <div class="movie-meta" id="mMeta"><span>Selecciona una categoría de GitHub o sube un archivo local</span></div>
-                <p class="movie-overview" id="mOverview">Haz clic en cualquier categoría de arriba para sincronizar tus listas directamente desde GitHub.</p>
+                <div class="movie-meta" id="mMeta"><span>Selecciona una colección arriba o sube un archivo local</span></div>
+                <p class="movie-overview" id="mOverview">Haz clic en cualquier categoría para cargar las listas integradas en el servidor de forma instantánea.</p>
                 <p class="movie-overview" id="mActors" style="font-size:0.85rem; color:#94a3b8;"></p>
             </div>
         </div>
@@ -176,31 +176,22 @@
     </div>
 
 <script>
-    // ==========================================
-    // ⚙️ CONFIGURACIÓN DE TU REPOSITORIO GITHUB
-    // ==========================================
-    const GITHUB_CONFIG = {
-        usuario: "TU_USUARIO_DE_GITHUB",      // REEMPLAZA CON TU NOMBRE DE USUARIO
-        repositorio: "TU_REPOSITORIO",      // REEMPLAZA CON EL NOMBRE DE TU REPOSITORIO
-        rama: "main",                       // Rama por defecto ("main" o "master")
-        
-        // Configuración exacta de tus archivos dentro de la carpeta /listas
-        listas: [
-            { nombre: "🎨 Pixar", archivo: "Coleccion Pixar.m3u" },
-            { nombre: "🌙 DreamWorks", archivo: "Coleccion DreamWorks Animation.m3u" },
-            { nombre: "🦇 Universo DC", archivo: "Universo DC.m3u" },
-            { nombre: "🦸 Universo Marvel", archivo: "Universo Marvel.m3u" },
-            { nombre: "🚓 Sagas Policíacas", archivo: "Sagas Policiacas.m3u" },
-            { nombre: "💥 Sagas Acción", archivo: "Sagas Accion.m3u" },
-            { nombre: "🏰 Disney", archivo: "Coleccion Disney.m3u" },
-            { nombre: "🎵 Musicales", archivo: "Nos va la marcha(Musicales).m3u" },
-            { nombre: "🕵️‍♂️ Sagas Suspense", archivo: "Sagas Suspense.m3u" },
-            { nombre: "🥋 Artes Marciales", archivo: "Sagas_Artes_Marciales_por_actor.m3u" },
-            { nombre: "😂 Sagas Comedia", archivo: "Sagas Comedia.m3u" },
-            { nombre: "🟡 Illumination", archivo: "Coleccion Illumination.m3u" },
-            { nombre: "❄️ Blue Sky", archivo: "Coleccion Blue Sky.m3u" }
-        ]
-    };
+    // Configuración limpia de tus archivos m3u en la carpeta /listas/
+    const LISTAS_INTERNAS = [
+        { nombre: "🎨 Pixar", archivo: "Coleccion Pixar.m3u" },
+        { nombre: "🌙 DreamWorks", archivo: "Coleccion DreamWorks Animation.m3u" },
+        { nombre: "🦇 Universo DC", archivo: "Universo DC.m3u" },
+        { nombre: "🦸 Universo Marvel", archivo: "Universo Marvel.m3u" },
+        { nombre: "🚓 Sagas Policíacas", archivo: "Sagas Policiacas.m3u" },
+        { nombre: "💥 Sagas Acción", archivo: "Sagas Accion.m3u" },
+        { nombre: "🏰 Disney", archivo: "Coleccion Disney.m3u" },
+        { nombre: "🎵 Musicales", archivo: "Nos va la marcha(Musicales).m3u" },
+        { nombre: "🕵️‍♂️ Sagas Suspense", archivo: "Sagas Suspense.m3u" },
+        { nombre: "🥋 Artes Marciales", archivo: "Sagas_Artes_Marciales_por_actor.m3u" },
+        { nombre: "😂 Sagas Comedia", archivo: "Sagas Comedia.m3u" },
+        { nombre: "🟡 Illumination", archivo: "Coleccion Illumination.m3u" },
+        { nombre: "❄️ Blue Sky", archivo: "Coleccion Blue Sky.m3u" }
+    ];
 
     const video = document.getElementById('mainVideo');
     const gridUI = document.getElementById('catalogGrid');
@@ -208,47 +199,47 @@
     const keyInput = document.getElementById('tmdbKey');
     const categoriesGrid = document.getElementById('categoriesGrid');
 
-    // API Key guardada por defecto
+    // Clave de la API integrada por defecto
     keyInput.value = localStorage.getItem('tmdb_key') || '8057a54a57714cade319b15e4fc0c3b4';
     keyInput.addEventListener('change', (e) => localStorage.setItem('tmdb_key', e.target.value));
 
     let peliculasLista = [];
 
-    // Generar la botonera
-    function inicializarCategoriasGitHub() {
+    // Construcción de botones automatizada
+    function inicializarCategorias() {
         categoriesGrid.innerHTML = "";
-        GITHUB_CONFIG.listas.forEach((lista) => {
+        LISTAS_INTERNAS.forEach((lista) => {
             const btn = document.createElement('button');
             btn.className = 'btn-category';
             btn.textContent = lista.nombre;
             btn.onclick = () => {
                 document.querySelectorAll('.btn-category').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                cargarListaDesdeGitHub(lista.archivo);
+                cargarListaDesdeCarpeta(lista.archivo);
             };
             categoriesGrid.appendChild(btn);
         });
     }
 
-    // Descarga desde la carpeta /listas/ de GitHub codificando correctamente los espacios
-    async function cargarListaDesdeGitHub(nombreArchivo) {
-        gridUI.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--accent-blue); font-weight:bold;">📥 Sincronizando desde GitHub Cloud...</div>`;
+    // Carga de archivos de manera RELATIVA (Busca en la carpeta local o en el servidor donde esté alojado)
+    async function cargarListaDesdeCarpeta(nombreArchivo) {
+        gridUI.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--accent-blue); font-weight:bold;">📥 Cargando colección...</div>`;
         totalUI.textContent = "0";
 
-        // Apunta directamente a la carpeta /listas/ codificando caracteres especiales
-        const urlRaw = `https://socramtv.github.io/SocramFlix-/`;
+        // Acceso directo a la subcarpeta /listas relativa al archivo HTML
+        const urlRelativa = `listas/${encodeURIComponent(nombreArchivo)}`;
 
         try {
-            const response = await fetch(urlRaw);
-            if (!response.ok) throw new Error("Error en la descarga");
+            const response = await fetch(urlRelativa);
+            if (!response.ok) throw new Error("Archivo no encontrado");
             
             const textoM3U = await response.text();
             interpretarContenidoM3U(textoM3U);
         } catch (error) {
             gridUI.innerHTML = `
                 <div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--accent);">
-                    ❌ Error al cargar la lista.<br>
-                    Verifica que tu repositorio sea <strong>Público</strong>, tus datos estén bien configurados y que el archivo exista dentro de la carpeta <strong>listas</strong> de GitHub.
+                    ❌ Error al cargar el archivo m3u.<br>
+                    Asegúrate de haber creado la carpeta llamada <strong>listas</strong> (en minúsculas) al lado de este archivo HTML y que contenga el archivo: <strong>${nombreArchivo}</strong>.
                 </div>`;
         }
     }
@@ -420,7 +411,7 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    inicializarCategoriasGitHub();
+    inicializarCategorias();
 </script>
 </body>
 </html>
