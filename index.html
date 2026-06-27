@@ -40,6 +40,7 @@
         .btn {
             padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold;
             cursor: pointer; transition: all 0.2s; color: white; font-size: 0.85rem;
+            display: inline-flex; align-items: center; gap: 6px;
         }
         .btn-accent { background: var(--accent); }
         .btn-accent:hover { background: #b80710; }
@@ -82,12 +83,27 @@
         .player-box { background: #000; width: 100%; aspect-ratio: 16 / 9; display: block; }
         video { width: 100%; height: 100%; object-fit: contain; }
 
+        /* Controles Expandidos */
+        .player-actions { 
+            display: flex; 
+            gap: 8px; 
+            margin-top: 12px; 
+            flex-wrap: wrap;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #1e293b;
+        }
+        .select-speed {
+            background: #1e293b; color: white; border: 1px solid #475569;
+            padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; cursor: pointer;
+        }
+
         .movie-details { padding: 20px; display: flex; flex-direction: column; justify-content: center; }
         .movie-title { font-size: 1.8rem; font-weight: 800; margin: 0 0 10px 0; color: #fff; }
         .movie-meta { display: flex; gap: 12px; font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; }
         .rating { background: #eab308; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
         .movie-overview { font-size: 0.95rem; line-height: 1.5; color: #cbd5e1; margin-bottom: 15px; }
-        .player-actions { display: flex; gap: 10px; margin-top: 10px; }
 
         /* Catálogo Grid */
         .catalog-section { margin-top: 10px; }
@@ -131,8 +147,10 @@
 </head>
 <body>
 
+    <!-- Input Oculto de la API Key -->
     <input type="hidden" id="tmdbKey">
 
+    <!-- Barra Superior -->
     <div class="navbar">
         <div class="logo">SOCRAM<span style="color:#fff">FLIX +</span></div>
         <div class="setup-panel">
@@ -141,20 +159,35 @@
         </div>
     </div>
 
+    <!-- Panel de Categorías -->
     <div class="categories-section">
         <div class="categories-title">Colecciones Disponibles</div>
         <div class="categories-grid" id="categoriesGrid"></div>
     </div>
 
+    <!-- Contenedor Principal -->
     <div class="main-container">
         <div class="cinema-hero">
             <div style="padding: 10px;">
                 <div class="player-box">
-                    <video id="mainVideo" controls autoplay x-webkit-airplay="allow" playsinline></video>
+                    <!-- Forzamos atributos nativos para asegurar compatibilidad de casteo en navegadores modernos -->
+                    <video id="mainVideo" controls autoplay x-webkit-airplay="allow" playsinline picture-in-picture></video>
                 </div>
+                
+                <!-- Barra de controles mejorada -->
                 <div class="player-actions">
-                    <button class="btn btn-accent" onclick="document.getElementById('mainVideo').webkitShowPlaybackTargetPicker?.() || alert('Usa el menú de tu navegador para enviar a la TV')">📺 Enviar a Smart TV</button>
-                    <button class="btn btn-file" onclick="document.getElementById('mainVideo').requestPictureInPicture()">🖼️ Ventana Flotante</button>
+                    <button class="btn btn-file" onclick="cambiarTiempo(-10)">⏪ -10s</button>
+                    <button class="btn btn-file" onclick="cambiarTiempo(10)">⏩ +10s</button>
+                    
+                    <select class="select-speed" onchange="cambiarVelocidad(this.value)">
+                        <option value="1">Velocidad: Normal</option>
+                        <option value="1.25">Velocidad: x1.25</option>
+                        <option value="1.5">Velocidad: x1.5</option>
+                        <option value="2">Velocidad: x2</option>
+                    </select>
+
+                    <button class="btn btn-file" onclick="document.getElementById('mainVideo').requestPictureInPicture()">🖼️ Flotante</button>
+                    <button class="btn btn-accent" onclick="activarPantallaCompleta()" style="margin-left: auto;">🖥️ Pantalla Completa</button>
                 </div>
             </div>
             
@@ -173,12 +206,11 @@
     </div>
 
 <script>
-    // Configuración limpia de tus archivos m3u en la carpeta /listas/
     const LISTAS_INTERNAS = [
         { nombre: "🎨 Pixar", archivo: "Coleccion Pixar.m3u" },
         { nombre: "🌙 DreamWorks", archivo: "Coleccion DreamWorks Animation.m3u" },
         { nombre: "🦇 Universo DC", archivo: "Universo DC.m3u" },
-        { nombre: "🦸 Universo Marvel", archivo: "Universo Marvel.m3u" },
+        { font: "🦸 Universo Marvel", nombre: "🦸 Universo Marvel", archivo: "Universo Marvel.m3u" },
         { nombre: "🚓 Sagas Policíacas", archivo: "Sagas Policiacas.m3u" },
         { nombre: "💥 Sagas Acción", archivo: "Sagas Accion.m3u" },
         { nombre: "🏰 Disney", archivo: "Coleccion Disney.m3u" },
@@ -196,12 +228,29 @@
     const keyInput = document.getElementById('tmdbKey');
     const categoriesGrid = document.getElementById('categoriesGrid');
 
-    // Clave de la API integrada por defecto y oculta
     keyInput.value = '8057a54a57714cade319b15e4fc0c3b4';
 
     let peliculasLista = [];
 
-    // Construcción de botones automatizada
+    // Funciones para la nueva botonera de controles
+    function cambiarTiempo(segundos) {
+        video.currentTime += segundos;
+    }
+
+    function cambiarVelocidad(valor) {
+        video.playbackRate = parseFloat(valor);
+    }
+
+    function activarPantallaCompleta() {
+        if (video.requestFullscreen) {
+            video.requestFullscreen();
+        } else if (video.webkitRequestFullscreen) {
+            video.webkitRequestFullscreen(); // Safari/iOS
+        } else if (video.msRequestFullscreen) {
+            video.msRequestFullscreen(); // IE/Edge antiguo
+        }
+    }
+
     function inicializarCategorias() {
         categoriesGrid.innerHTML = "";
         LISTAS_INTERNAS.forEach((lista) => {
@@ -217,7 +266,6 @@
         });
     }
 
-    // Carga de archivos de manera RELATIVA
     async function cargarListaDesdeCarpeta(nombreArchivo) {
         gridUI.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--accent-blue); font-weight:bold;">📥 Cargando colección...</div>`;
         totalUI.textContent = "0";
@@ -234,7 +282,7 @@
             gridUI.innerHTML = `
                 <div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--accent);">
                     ❌ Error al cargar el archivo m3u.<br>
-                    Asegúrate de haber creado la carpeta llamada <strong>listas</strong> (en minúsculas) al lado de este archivo HTML y que contenga el archivo: <strong>${nombreArchivo}</strong>.
+                    Asegúrate de haber creado la carpeta llamada <strong>listas</strong> al lado de este archivo HTML y que contenga el archivo: <strong>${nombreArchivo}</strong>.
                 </div>`;
         }
     }
