@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamPlex Pro - Local & Cloud Server</title>
+    <title>SocramFlix +</title>
     <style>
         :root {
             --bg-main: #0b0f19;
@@ -35,10 +35,6 @@
         .logo { font-size: 1.6rem; font-weight: 900; color: var(--accent); letter-spacing: 1px; }
         
         .setup-panel { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        input[type="text"] {
-            background: rgba(21, 31, 50, 0.8); border: 1px solid #334155;
-            padding: 8px 12px; border-radius: 6px; color: white; width: 180px; font-size: 0.8rem;
-        }
         input[type="file"] { display: none; }
         
         .btn {
@@ -135,10 +131,11 @@
 </head>
 <body>
 
+    <input type="hidden" id="tmdbKey">
+
     <div class="navbar">
-        <div class="logo">STREAM<span style="color:#fff">PLEX</span></div>
+        <div class="logo">SOCRAM<span style="color:#fff">FLIX +</span></div>
         <div class="setup-panel">
-            <input type="text" id="tmdbKey" placeholder="Tu API Key de TMDb">
             <label for="fileInput" class="btn btn-file">📂 Archivo Local</label>
             <input type="file" id="fileInput" accept=".m3u,.m3u8" onchange="procesarM3ULocal(event)">
         </div>
@@ -199,9 +196,8 @@
     const keyInput = document.getElementById('tmdbKey');
     const categoriesGrid = document.getElementById('categoriesGrid');
 
-    // Clave de la API integrada por defecto
-    keyInput.value = localStorage.getItem('tmdb_key') || '8057a54a57714cade319b15e4fc0c3b4';
-    keyInput.addEventListener('change', (e) => localStorage.setItem('tmdb_key', e.target.value));
+    // Clave de la API integrada por defecto y oculta
+    keyInput.value = '8057a54a57714cade319b15e4fc0c3b4';
 
     let peliculasLista = [];
 
@@ -221,12 +217,11 @@
         });
     }
 
-    // Carga de archivos de manera RELATIVA (Busca en la carpeta local o en el servidor donde esté alojado)
+    // Carga de archivos de manera RELATIVA
     async function cargarListaDesdeCarpeta(nombreArchivo) {
         gridUI.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--accent-blue); font-weight:bold;">📥 Cargando colección...</div>`;
         totalUI.textContent = "0";
 
-        // Acceso directo a la subcarpeta /listas relativa al archivo HTML
         const urlRelativa = `listas/${encodeURIComponent(nombreArchivo)}`;
 
         try {
